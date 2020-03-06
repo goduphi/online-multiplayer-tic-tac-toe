@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include "socket.h"
 
 /*
 	0 - represents an empty space
@@ -241,8 +242,49 @@ bool CheckRLDiag(int Board[][BOARD_SIZE], int *PlayerNumber)
 	return false;
 }
 
+void CheckCmdArgs(int argc, char *argv[])
+{
+	if(argc < 2 || argc > 3)
+	{
+		printf("Follow the format: %s <Server Address> <Port Number>", argv[0]);
+		exit(0);
+	}
+}
+
+void ConvertToString(char *ReturnStrArray, Coordinates coordinates)
+{
+	memset(ReturnStrArray, 0, sizeof(ReturnStrArray));
+	sprintf(ReturnStrArray, "%d,%d", coordinates.x, coordinates.y);
+}
+
+void ConvertToCoordinates(char *ClientString, Coordinates *coordinates)
+{
+	sscanf(ClientString, "%d,%d", &coordinates->x, &coordinates->y);
+}
+
 int main(int argc, char *argv[])
 {
+	
+	// Check to see if the user put in the ip address and port number of the server
+	CheckCmdArgs(argc, argv);
+	
+	// This section of the code is responsible for connecting to the server
+	// Initialize the server ip and port
+	char ServerIp[20];
+	in_port_t Port = 0;
+	SetupIpPort(ServerIp, &Port, argv);
+	
+	// Create a synchronous socket
+	int SocketDescriptor = CreateSyncSocket();
+	
+	// Prepare address of the server
+	SocketAddress ServAddr;
+	ConstructServerAddrPort(&ServAddr, ServerIp, Port);
+	
+	// Establish a connection with the server
+	if(connect(SocketDescriptor, (struct sockaddr *)&ServAddr, sizeof(ServAddr)) < 0)
+		perror("connect() failed");
+	
 	int MainBoard[BOARD_SIZE][BOARD_SIZE];
 	int InternalPlayerCounter = 1;
 	int PlayerNumber = 0;
@@ -266,16 +308,33 @@ int main(int argc, char *argv[])
 	// Game loop
 	while(1)
 	{
+		char StringCoordinate[BUFFSIZE];
+		memset(StringCoordinate, 0, sizeof(StringCoordinate));
+		
 		printf("Enter coordinates in the format x,y ");
 
 		getchar();
 		
 		scanf("%d,%d", &PlayerInput.x, &PlayerInput.y);
 		
-		if(InsertCoordinates(MainBoard, PlayerInput, InternalPlayerCounter))
+		ConvertToString(StringCoordinate, PlayerInput);
+
+		Send(SocketDescriptor, StringCoordinate);
+		
+		// Handle incoming data
+		Coordinates IncomingCoordinates;
+		memset(StringCoordinate, 0, sizeof(StringCoordinate));
+		//memset(StringCoordinate, 0, sizeof(StringCoordinate));
+		ReceiveData(SocketDescriptor, StringCoordinate);
+		
+		printf("%s\n", StringCoordinate);
+		
+		ConvertToCoordinates(StringCoordinate, &IncomingCoordinates);
+		
+		if(InsertCoordinates(MainBoard, IncomingCoordinates, InternalPlayerCounter))
 			InternalPlayerCounter++;
 		else
-			printf("Player %d goes again.", (InternalPlayerCounter%2 == 0 ? 2 : 1 ));
+			printf("Player %d goes again.\n", (InternalPlayerCounter%2 == 0 ? 2 : 1 ));
 
 		PrintBoard(MainBoard, Player1Char, Player2Char);
 		
@@ -286,6 +345,8 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+	
+	close(SocketDescriptor);
 	
 	return 0;
 }
