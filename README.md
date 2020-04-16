@@ -10,3 +10,6 @@
 ### API's used:
   Sockets API in C  
   pthread API in C  
+  
+### Yet to implement
+  Sending data to all connected clients.
