@@ -46,6 +46,20 @@ void ConstructServerAddrPort(struct sockaddr_in *servAddr, char ip[], in_port_t 
 	servAddr->sin_port = htons(port);
 }
 
+// Param 1: Pass in the address of the sockaddr_in structure
+// Param 2: Pass the the port number
+void ConstructServerPort(struct sockaddr_in *servAddr, in_port_t port)
+{
+	// Prepare the sockaddr_in structure to hold server address
+	memset(servAddr, 0, sizeof(*servAddr));			// Zero out the structure
+	servAddr->sin_family = AF_INET; 				// Set the address family to IPv4
+	servAddr->sin_addr.s_addr = htonl(INADDR_ANY);	// Any incoming interface
+	
+	// htons, "host to network short", ensures that the binary value is formatter
+	// as required by the API
+	servAddr->sin_port = htons(port);
+}
+
 // Param 1: Pass in socket descriptor
 // Param 2: Pass in a char array that holds the string to send
 void Send(int socketDescriptor, char string[])
@@ -68,10 +82,9 @@ void ReceiveData(int socketDescriptor, char string[])
 {
 	unsigned int totalBytesReceived = 0; // Count the total number of bytes received
 	
+	// Receive the length of the data sent
 	while(totalBytesReceived < strlen(string))
-	{
-		char buffer[BUFFSIZE];
-		
+	{	
 		// recv() will block until data is available
 		int numBytes = recv(socketDescriptor, string, BUFFSIZE - 1, 0);
 		
@@ -81,7 +94,34 @@ void ReceiveData(int socketDescriptor, char string[])
 			printf("recv(), connection close prematurely.");
 		
 		totalBytesReceived += numBytes;
-		buffer[numBytes] = '\0';
+		string[numBytes] = '\0';
 	}
+}
+
+ssize_t ServerReceiveData(int socketDescriptor, char string[])
+{
+	// Receive message from client
+	ssize_t numBytesRcvd = recv(socketDescriptor, string, BUFFSIZE, 0);
+	if(numBytesRcvd < 0)
+		perror("recv() failed");
 	
+	return numBytesRcvd;
+}
+
+void ServerSendData(int socketDescriptor, char string[], ssize_t bytesReceived)
+{
+	while(bytesReceived > 0) // 0 indicates end of stream
+	{
+		// Send data to client
+		ssize_t numBytesSent = send(socketDescriptor, string, bytesReceived, 0);
+		if(numBytesSent < 0)
+			perror("send() failed");
+		else if(numBytesSent != bytesReceived)
+			printf("send() sent an unexpected number of bytes.");
+		
+		// See if there is more data to receive
+		ssize_t numBytesRcvd = recv(socketDescriptor, string, BUFFSIZE, 0);
+		if(numBytesRcvd < 0)
+			perror("recv() failed");
+	}
 }

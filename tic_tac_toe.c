@@ -283,7 +283,10 @@ int main(int argc, char *argv[])
 	
 	// Establish a connection with the server
 	if(connect(SocketDescriptor, (struct sockaddr *)&ServAddr, sizeof(ServAddr)) < 0)
+	{
 		perror("connect() failed");
+		exit(0);
+	}
 	
 	int MainBoard[BOARD_SIZE][BOARD_SIZE];
 	int InternalPlayerCounter = 1;
@@ -323,11 +326,9 @@ int main(int argc, char *argv[])
 		
 		// Handle incoming data
 		Coordinates IncomingCoordinates;
-		memset(StringCoordinate, 0, sizeof(StringCoordinate));
-		//memset(StringCoordinate, 0, sizeof(StringCoordinate));
-		ReceiveData(SocketDescriptor, StringCoordinate);
 		
-		printf("%s\n", StringCoordinate);
+		ReceiveData(SocketDescriptor, StringCoordinate);
+		printf("%s", StringCoordinate);
 		
 		ConvertToCoordinates(StringCoordinate, &IncomingCoordinates);
 		
@@ -348,5 +349,5 @@ int main(int argc, char *argv[])
 	
 	close(SocketDescriptor);
 	
-	return 0;
+	return EXIT_SUCCESS;
 }

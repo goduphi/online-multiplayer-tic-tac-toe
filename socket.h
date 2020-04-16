@@ -19,5 +19,8 @@ int CreateSyncSocket();
 void ConstructServerAddrPort(struct sockaddr_in *servAddr, char ip[], in_port_t port);
 void Send(int socketDescriptor, char string[]);
 void ReceiveData(int socketDescriptor, char string[]);
+void ConstructServerPort(struct sockaddr_in *servAddr, in_port_t port);
+ssize_t ServerReceiveData(int socketDescriptor, char string[]);
+void ServerSendData(int socketDescriptor, char string[], ssize_t bytesReceived);
 
 #endif
