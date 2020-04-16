@@ -1,5 +1,8 @@
 # Multiplayer Tic-Tac-Toe in C
 ## Author: Sarker Nadir Afridi Azmi
+## Resource used:
+  Practical Guide for Programmers - 2nd Edition  
+  Author: Michael J. Donaho, Kenneth L. Calvert
 
 ### Compilation instructions:
   Client: ```gcc tic_tac_toe.c socket.c -o ttt -g```  
