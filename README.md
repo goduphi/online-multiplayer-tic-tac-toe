@@ -12,4 +12,7 @@
   pthread API in C  
   
 ### Yet to implement
-  Sending data to all connected clients.
+- [ ] Send data from one client to the other client.
+  
+### Note
+  All of the code was written in C and compiled on Linux using gcc. A lot of the code is not portable.
