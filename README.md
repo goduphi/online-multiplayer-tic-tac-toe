@@ -1,4 +1,4 @@
-# Multiplayer Tic-Tac-Toe  
+# Multiplayer Tic-Tac-Toe in C
 ## Author: Sarker Nadir Afridi Azmi
 
 ### Compilation instructions:
