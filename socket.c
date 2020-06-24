@@ -64,13 +64,13 @@ void ConstructServerPort(struct sockaddr_in *servAddr, in_port_t port)
 // Param 2: Pass in a char array that holds the string to send
 void Send(int socketDescriptor, char string[])
 {
-	ssize_t numBytes = send(socketDescriptor, string, strlen(string), 0);
+	ssize_t numBytes = send(socketDescriptor, string, BUFFSIZE, 0);
 	
 	if(numBytes < 0)
 	{
 		perror("send() failed: ");
 	}
-	else if(numBytes != strlen(string))
+	else if(numBytes != BUFFSIZE)
 	{
 		printf("send() sent an unexpected number of bytes.");
 	}
@@ -81,12 +81,11 @@ void Send(int socketDescriptor, char string[])
 void ReceiveData(int socketDescriptor, char string[])
 {
 	unsigned int totalBytesReceived = 0; // Count the total number of bytes received
-	
 	// Receive the length of the data sent
-	while(totalBytesReceived < strlen(string))
+	while(totalBytesReceived < BUFFSIZE)
 	{	
 		// recv() will block until data is available
-		int numBytes = recv(socketDescriptor, string, BUFFSIZE - 1, 0);
+		int numBytes = recv(socketDescriptor, string, BUFFSIZE, 0);
 		
 		if(numBytes < 0)
 			perror("recv() failed");
@@ -104,24 +103,5 @@ ssize_t ServerReceiveData(int socketDescriptor, char string[])
 	ssize_t numBytesRcvd = recv(socketDescriptor, string, BUFFSIZE, 0);
 	if(numBytesRcvd < 0)
 		perror("recv() failed");
-	
 	return numBytesRcvd;
-}
-
-void ServerSendData(int socketDescriptor, char string[], ssize_t bytesReceived)
-{
-	while(bytesReceived > 0) // 0 indicates end of stream
-	{
-		// Send data to client
-		ssize_t numBytesSent = send(socketDescriptor, string, bytesReceived, 0);
-		if(numBytesSent < 0)
-			perror("send() failed");
-		else if(numBytesSent != bytesReceived)
-			printf("send() sent an unexpected number of bytes.");
-		
-		// See if there is more data to receive
-		ssize_t numBytesRcvd = recv(socketDescriptor, string, BUFFSIZE, 0);
-		if(numBytesRcvd < 0)
-			perror("recv() failed");
-	}
 }

@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <pthread.h>
 #include "socket.h"
+
+static int SocketDescriptor = 0;
 
 /*
 	0 - represents an empty space
@@ -262,9 +265,20 @@ void ConvertToCoordinates(char *ClientString, Coordinates *coordinates)
 	sscanf(ClientString, "%d,%d", &coordinates->x, &coordinates->y);
 }
 
+void *ReceiveDataFromServer(void *data)
+{
+	char *dataToSend = (char *)data;
+	while(1)
+	{
+		ReceiveData(SocketDescriptor, dataToSend);
+		fputs(dataToSend, stdout);
+		fflush(stdout);
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	
+	// Networking code - Start
 	// Check to see if the user put in the ip address and port number of the server
 	CheckCmdArgs(argc, argv);
 	
@@ -275,7 +289,7 @@ int main(int argc, char *argv[])
 	SetupIpPort(ServerIp, &Port, argv);
 	
 	// Create a synchronous socket
-	int SocketDescriptor = CreateSyncSocket();
+	SocketDescriptor = CreateSyncSocket();
 	
 	// Prepare address of the server
 	SocketAddress ServAddr;
@@ -287,6 +301,7 @@ int main(int argc, char *argv[])
 		perror("connect() failed");
 		exit(0);
 	}
+	// Networking code - End
 	
 	int MainBoard[BOARD_SIZE][BOARD_SIZE];
 	int InternalPlayerCounter = 1;
@@ -308,29 +323,26 @@ int main(int argc, char *argv[])
 	
 	PrintBoard(MainBoard, Player1Char, Player2Char);
 	
+	char *data = (char *)malloc(sizeof(BUFFSIZE));
+	memset(data, 0, sizeof(*data));
+	
+	pthread_t ReceivingThread;
+	pthread_create(&ReceivingThread, NULL, ReceiveDataFromServer, (void *)&data);
 	// Game loop
 	while(1)
-	{
-		char StringCoordinate[BUFFSIZE];
-		memset(StringCoordinate, 0, sizeof(StringCoordinate));
-		
+	{		
 		printf("Enter coordinates in the format x,y ");
-
 		getchar();
-		
 		scanf("%d,%d", &PlayerInput.x, &PlayerInput.y);
 		
-		ConvertToString(StringCoordinate, PlayerInput);
+		ConvertToString(data, PlayerInput);
 
-		Send(SocketDescriptor, StringCoordinate);
+		Send(SocketDescriptor, data);
 		
 		// Handle incoming data
 		Coordinates IncomingCoordinates;
 		
-		ReceiveData(SocketDescriptor, StringCoordinate);
-		printf("%s", StringCoordinate);
-		
-		ConvertToCoordinates(StringCoordinate, &IncomingCoordinates);
+		ConvertToCoordinates(data, &IncomingCoordinates);
 		
 		if(InsertCoordinates(MainBoard, IncomingCoordinates, InternalPlayerCounter))
 			InternalPlayerCounter++;
@@ -347,6 +359,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+	free(data);
+	pthread_join(ReceivingThread, NULL);
 	close(SocketDescriptor);
 	
 	return EXIT_SUCCESS;

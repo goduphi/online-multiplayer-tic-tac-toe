@@ -9,8 +9,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdint.h>
 
 #define BUFFSIZE 4
+#define MAX_CLIENTS 2
+
+// This Clients struct will hold all clients and will be passed into the thread function
+typedef struct Clients
+{
+	uint8_t id;
+	int descriptors[MAX_CLIENTS];
+	char *data;
+} Clients;
 
 typedef struct sockaddr_in SocketAddress;
 

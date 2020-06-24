@@ -3,49 +3,43 @@
 #include "socket.h"
 
 static const int MAXPENDING = 2; // Maximum number of outstanding connection requests
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
-struct client_info
-{
-	int socket_desp;
-	SocketAddress socketAddr;
-};
 
 void CheckCmdArgs(int argc, char *argv[])
 {
-	if(argc < 1 || argc > 2)
+	if(argc != 2)
 	{
 		printf("Follow the format: %s <Server Address> <Port Number>", argv[0]);
 		exit(0);
 	}
 }
 
-void * process_client_request(void * ci)
+void *SendDataToAllClients(void *clientData)
 {
-	struct client_info c_i = *((struct client_info *)ci);
-	SocketAddress ClientAddr = c_i.socketAddr;
-	int csd = c_i.socket_desp;
-	
-	pthread_mutex_lock(&lock);
-	
-	char ClientName[INET_ADDRSTRLEN];
+	Clients *clients = (Clients *)clientData;
+	int id = clients->id;
+	printf("Client id: %d, joined the server.\n", id);
+	while(1)
+	{
+		memset(clients->data, 0, sizeof(BUFFSIZE));
+		ssize_t bytesReceived = ServerReceiveData(clients->descriptors[id], clients->data);
 		
-	if(inet_ntop(AF_INET, &ClientAddr.sin_addr.s_addr, ClientName, sizeof(ClientName)) != NULL)
-		printf("Handling client %s/%d\n", ClientName, ntohs(ClientAddr.sin_port));
-	else
-		printf("Unable to get client address");
-	
-	char Msg[BUFFSIZE - 1];
-	memset(Msg, 0, sizeof(Msg));
-	
-	pthread_mutex_unlock(&lock);
-	
-	// Handle client data
-	ssize_t bytesReceived = ServerReceiveData(csd, Msg);
-	ServerSendData(csd, Msg, bytesReceived);
-	
-	close(csd); // Close the client connection
-	pthread_exit(NULL);
+		if(bytesReceived > 0)
+		{
+			printf("Received %ld bytes of data from client: %d -> %s\n", bytesReceived, id, clients->data);
+			// Debugging
+			int i = 0;
+			for(i = 0; i < BUFFSIZE; i++)
+			{
+				printf("%x ", clients->data[i]);
+			}
+			printf("\n");
+			for(i = 0; i < MAXPENDING; i++)
+				// Send the data to all clients except the sender
+				if(clients->descriptors[i] != clients->descriptors[id])
+					Send(clients->descriptors[i], clients->data);
+		}
+	}
+	close(clients->descriptors[id]);
 }
 
 int main(int argc, char *argv[])
@@ -69,48 +63,57 @@ int main(int argc, char *argv[])
 	if(listen(SocketDescriptor, MAXPENDING) < 0)
 		perror("listen() failed");
 	
-	pthread_t client_request_tid[MAXPENDING];
-	int client_request_idx = 0;
+	printf("Waiting for connections ...\n");
+	
+	Clients clients;
+	memset(&clients, 0, sizeof(clients));
+	
+	// Keeps track of the number of clients
+	int ClientCount = 0;
+	pthread_t ClientThread[MAXPENDING];
+	
+	char *DataBuffer = (char *)malloc(sizeof(BUFFSIZE));
+	clients.data = DataBuffer;
 	
 	// You want to accept all incoming connections
 	while(1)
 	{
 		SocketAddress ClientAddr;	// Client Address
-		
 		// Set the length of the client address structure
 		socklen_t ClientAddrLen = sizeof(ClientAddr);
 		
 		// Wait for client connect
-		int ClientSock = accept(SocketDescriptor, (struct sockaddr *)&ClientAddr, &ClientAddrLen);
-		if(ClientSock < 0)
+		int sock = accept(SocketDescriptor, (struct sockaddr *)&ClientAddr, &ClientAddrLen);
+		
+		if(sock < 0)
 		{
 			perror("accept() failed");
 			exit(0);
 		}
 		
-		struct client_info ci;
-		ci.socket_desp = ClientSock;
-		ci.socketAddr = ClientAddr;
+		clients.id = ClientCount;
+		clients.descriptors[ClientCount] = sock;
 		
-		// For each client, create a new thread to process that request
-		// This allows for main to accept more clients
-		if(pthread_create(&client_request_tid[client_request_idx], NULL, process_client_request, (struct client_info *)&ci))
+		char ClientName[INET_ADDRSTRLEN];
+		if(inet_ntop(AF_INET, &ClientAddr.sin_addr.s_addr, ClientName, sizeof(ClientName)) != NULL)
+			printf("Handling client %s/%d\n", ClientName, ntohs(ClientAddr.sin_port));
+		else
+			printf("Unable to get client address.\n");
+		
+		// Instantiate thread to receive and send data to client
+		if(pthread_create(&ClientThread[ClientCount++], NULL, SendDataToAllClients, (void *)&clients))
 		{
-			printf("Thread creation failed.\n");
+			printf("Failed to instantiate thread for client %d.\n", ClientCount);
 		}
 		
-		// Join all of spawned the threads
-		// https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading
-		if(client_request_idx > 1)
-		{
-			client_request_idx = 0;
-			while(client_request_idx < MAXPENDING)
-			{
-				pthread_join(client_request_tid[client_request_idx++], NULL);
-			}
-			client_request_idx = 0;
-		}
+		if(ClientCount == 2)
+			ClientCount = 0;
 	}
+	
+	free(DataBuffer);
+	int i = 0;
+	for(i = 0; i < MAXPENDING; i++)
+		pthread_join(ClientThread[i], NULL);
 	
 	return EXIT_SUCCESS;
 }
