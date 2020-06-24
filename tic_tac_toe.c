@@ -256,7 +256,7 @@ void CheckCmdArgs(int argc, char *argv[])
 
 void ConvertToString(char *ReturnStrArray, Coordinates coordinates)
 {
-	memset(ReturnStrArray, 0, sizeof(ReturnStrArray));
+	memset(ReturnStrArray, 0, sizeof(*ReturnStrArray));
 	sprintf(ReturnStrArray, "%d,%d", coordinates.x, coordinates.y);
 }
 
@@ -311,15 +311,8 @@ int main(int argc, char *argv[])
 	
 	printf("WELCOME TO TIC-TAC-TOE\n\n");
 	
-	char Player1Char;
-	char Player2Char;
-	
-	Coordinates PlayerInput;
-	
-	printf("Choose the character to be printed (Format: X O) ");
-
-	scanf(" %c", &Player1Char);
-	scanf(" %c", &Player2Char);
+	char Player1Char = 'X';
+	char Player2Char = 'O';
 	
 	PrintBoard(MainBoard, Player1Char, Player2Char);
 	
@@ -332,7 +325,7 @@ int main(int argc, char *argv[])
 	while(1)
 	{		
 		printf("Enter coordinates in the format x,y ");
-		getchar();
+		Coordinates PlayerInput;
 		scanf("%d,%d", &PlayerInput.x, &PlayerInput.y);
 		
 		ConvertToString(data, PlayerInput);
@@ -341,7 +334,6 @@ int main(int argc, char *argv[])
 		
 		// Handle incoming data
 		Coordinates IncomingCoordinates;
-		
 		ConvertToCoordinates(data, &IncomingCoordinates);
 		
 		if(InsertCoordinates(MainBoard, IncomingCoordinates, InternalPlayerCounter))
