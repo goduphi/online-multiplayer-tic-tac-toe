@@ -3,6 +3,7 @@
 #include "socket.h"
 
 static const int MAXPENDING = 2; // Maximum number of outstanding connection requests
+static int CurrentId = -1;
 
 void CheckCmdArgs(int argc, char *argv[])
 {
@@ -25,7 +26,7 @@ void *SendDataToAllClients(void *clientData)
 		
 		if(bytesReceived > 0)
 		{
-			printf("Received %ld bytes of data from client: %d -> %s\n", bytesReceived, id, clients->data);
+			printf("Received %ld bytes of data from client: %d -> %d,%d\n", bytesReceived, clients->data[0], clients->data[1], clients->data[2]);
 			// Debugging
 			int i = 0;
 			for(i = 0; i < BUFFSIZE; i++)
@@ -35,7 +36,7 @@ void *SendDataToAllClients(void *clientData)
 			printf("\n");
 			for(i = 0; i < MAXPENDING; i++)
 				// Send the data to all clients except the sender
-				if(clients->descriptors[i] != clients->descriptors[id])
+				//if(clients->descriptors[i] != clients->descriptors[id])
 					Send(clients->descriptors[i], clients->data);
 		}
 	}
@@ -69,10 +70,10 @@ int main(int argc, char *argv[])
 	memset(&clients, 0, sizeof(clients));
 	
 	// Keeps track of the number of clients
-	int ClientCount = 0;
+	uint8_t ClientCount = 0;
 	pthread_t ClientThread[MAXPENDING];
 	
-	char *DataBuffer = (char *)malloc(sizeof(BUFFSIZE));
+	char *DataBuffer = (char *)malloc(BUFFSIZE * sizeof(char));
 	clients.data = DataBuffer;
 	
 	// You want to accept all incoming connections
@@ -92,6 +93,12 @@ int main(int argc, char *argv[])
 		}
 		
 		clients.id = ClientCount;
+		
+		// Send the id back to the client
+		char IdBuffer[BUFFSIZE];
+		memset(&IdBuffer, -1, sizeof(IdBuffer));
+		IdBuffer[0] = ClientCount;
+		Send(sock, IdBuffer);
 		clients.descriptors[ClientCount] = sock;
 		
 		char ClientName[INET_ADDRSTRLEN];

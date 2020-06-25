@@ -11,8 +11,11 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 
-#define BUFFSIZE 4
+#define BUFFSIZE 3
 #define MAX_CLIENTS 2
+
+// The first byte will be the id of the clients
+// The next two bytes will be the coordinates
 
 // This Clients struct will hold all clients and will be passed into the thread function
 typedef struct Clients

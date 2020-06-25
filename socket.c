@@ -93,7 +93,6 @@ void ReceiveData(int socketDescriptor, char string[])
 			printf("recv(), connection close prematurely.");
 		
 		totalBytesReceived += numBytes;
-		string[numBytes] = '\0';
 	}
 }
 

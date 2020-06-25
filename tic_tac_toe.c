@@ -3,8 +3,6 @@
 #include <pthread.h>
 #include "socket.h"
 
-static int SocketDescriptor = 0;
-
 /*
 	0 - represents an empty space
 	1 - represents an X
@@ -16,9 +14,15 @@ static int SocketDescriptor = 0;
 // Stores player coordinates
 typedef struct Coordinates
 {
-	int x;
-	int y;
+	int8_t x;
+	int8_t y;
 } Coordinates;
+
+static int SocketDescriptor = 0;
+static int8_t id = -1;
+static int8_t PlayerTurn = -1;
+static bool DataReceived = false;
+Coordinates IncomingCoordinates;
 
 // Check for row or column
 typedef enum CHECK
@@ -254,25 +258,27 @@ void CheckCmdArgs(int argc, char *argv[])
 	}
 }
 
-void ConvertToString(char *ReturnStrArray, Coordinates coordinates)
+void ConvertToCoordinates(char *data, Coordinates *coordinates)
 {
-	memset(ReturnStrArray, 0, sizeof(*ReturnStrArray));
-	sprintf(ReturnStrArray, "%d,%d", coordinates.x, coordinates.y);
-}
-
-void ConvertToCoordinates(char *ClientString, Coordinates *coordinates)
-{
-	sscanf(ClientString, "%d,%d", &coordinates->x, &coordinates->y);
+	coordinates->x = data[1];
+	coordinates->y = data[2];
 }
 
 void *ReceiveDataFromServer(void *data)
 {
-	char *dataToSend = (char *)data;
+	char *ReceivedData = (char *)data;
+	// Set the initial id from the server
+	// Only set the id only once
+	ReceiveData(SocketDescriptor, ReceivedData);
+	id = ReceivedData[0];
+	PlayerTurn = id;
 	while(1)
 	{
-		ReceiveData(SocketDescriptor, dataToSend);
-		fputs(dataToSend, stdout);
-		fflush(stdout);
+		ReceiveData(SocketDescriptor, ReceivedData);
+		ConvertToCoordinates(ReceivedData, &IncomingCoordinates);
+		printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0], IncomingCoordinates.x, IncomingCoordinates.y);
+		if(IncomingCoordinates.x != -1 && IncomingCoordinates.y != -1)
+			DataReceived = true;
 	}
 }
 
@@ -316,25 +322,40 @@ int main(int argc, char *argv[])
 	
 	PrintBoard(MainBoard, Player1Char, Player2Char);
 	
-	char *data = (char *)malloc(sizeof(BUFFSIZE));
-	memset(data, 0, sizeof(*data));
+	char *data = (char *)malloc(BUFFSIZE * sizeof(char));
 	
 	pthread_t ReceivingThread;
 	pthread_create(&ReceivingThread, NULL, ReceiveDataFromServer, (void *)&data);
+	
+	// While id is not set, wait
+	// This makes sure the game does not start until the player gets an id
+	while(id == -1);
+	
 	// Game loop
 	while(1)
-	{		
-		printf("Enter coordinates in the format x,y ");
-		Coordinates PlayerInput;
-		scanf("%d,%d", &PlayerInput.x, &PlayerInput.y);
+	{
+		Coordinates PlayerInput = {};
+		if(PlayerTurn%2 == 0)
+		{
+			printf("Enter coordinates in the format x,y ");
+			scanf("%hhd,%hhd", &PlayerInput.x, &PlayerInput.y);
+			
+			char SendBuffer[BUFFSIZE];
+			memset(&SendBuffer, 0, BUFFSIZE);
+			SendBuffer[0] = id;
+			SendBuffer[1] = PlayerInput.x;
+			SendBuffer[2] = PlayerInput.y;
+			Send(SocketDescriptor, SendBuffer);
+		}
+		else
+			printf("Waiting for response...\n");
 		
-		ConvertToString(data, PlayerInput);
-
-		Send(SocketDescriptor, data);
+		// This variable syncs both players
+		PlayerTurn++;
 		
-		// Handle incoming data
-		Coordinates IncomingCoordinates;
-		ConvertToCoordinates(data, &IncomingCoordinates);
+		// Wait until data is received
+		while(!DataReceived);
+		DataReceived = false;
 		
 		if(InsertCoordinates(MainBoard, IncomingCoordinates, InternalPlayerCounter))
 			InternalPlayerCounter++;
@@ -350,8 +371,9 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-	
-	free(data);
+	printf("Reached1\n");
+	//free(data);
+	printf("Reached2\n");
 	pthread_join(ReceivingThread, NULL);
 	close(SocketDescriptor);
 	
