@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include "socket.h"
 
@@ -14,6 +15,17 @@ void CheckCmdArgs(int argc, char *argv[])
 	}
 }
 
+bool CheckData(char buffer[])
+{
+	int checkIdx = 1;
+	for(; checkIdx < BUFFSIZE; checkIdx++)
+	{
+		if(buffer[checkIdx] < 0 || buffer[checkIdx] > 2)
+			return false;
+	}
+	return true;
+}
+
 void *SendDataToAllClients(void *clientData)
 {
 	Clients *clients = (Clients *)clientData;
@@ -23,6 +35,15 @@ void *SendDataToAllClients(void *clientData)
 	{
 		memset(clients->data, 0, sizeof(BUFFSIZE));
 		ssize_t bytesReceived = ServerReceiveData(clients->descriptors[id], clients->data);
+		
+		if(!CheckData(clients->data))
+		{
+			char ErrorBuff[BUFFSIZE];
+			memset(&ErrorBuff, 0, sizeof(ErrorBuff));
+			ErrorBuff[1] = (char)INVALID_DATA;
+			Send(clients->descriptors[id], ErrorBuff);
+			continue;
+		}
 		
 		if(bytesReceived > 0)
 		{

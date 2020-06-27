@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <signal.h>
 #include "socket.h"
 
 /*
@@ -18,18 +19,19 @@ typedef struct Coordinates
 	int8_t y;
 } Coordinates;
 
-static int SocketDescriptor = 0;
-static int8_t id = -1;
-static int8_t PlayerTurn = -1;
-static bool DataReceived = false;
-Coordinates IncomingCoordinates;
-
 // Check for row or column
 typedef enum CHECK
 {
 	COL,
 	ROW
 } CHECK;
+
+static int SocketDescriptor = 0;
+static int8_t id = -1;
+static int8_t PlayerTurn = -1;
+static bool DataReceived = false;
+static ERROR error = DEFAULT;
+Coordinates IncomingCoordinates;
 
 // Creates the board
 // Param: Pass in a two-dimensional int array
@@ -275,10 +277,17 @@ void *ReceiveDataFromServer(void *data)
 	while(1)
 	{
 		ReceiveData(SocketDescriptor, ReceivedData);
-		ConvertToCoordinates(ReceivedData, &IncomingCoordinates);
-		printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0], IncomingCoordinates.x, IncomingCoordinates.y);
-		if(IncomingCoordinates.x != -1 && IncomingCoordinates.y != -1)
+		if((ERROR)ReceivedData[1] == INVALID_DATA)
+		{
+			printf("Your input was invalid.\n");
+			error = INVALID_DATA;
+		}
+		else
+		{
+			ConvertToCoordinates(ReceivedData, &IncomingCoordinates);
+			printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0], IncomingCoordinates.x, IncomingCoordinates.y);
 			DataReceived = true;
+		}
 	}
 }
 
@@ -323,6 +332,7 @@ int main(int argc, char *argv[])
 	PrintBoard(MainBoard, Player1Char, Player2Char);
 	
 	char *data = (char *)malloc(BUFFSIZE * sizeof(char));
+	char *dataPtr = data;
 	
 	pthread_t ReceivingThread;
 	pthread_create(&ReceivingThread, NULL, ReceiveDataFromServer, (void *)&data);
@@ -338,7 +348,19 @@ int main(int argc, char *argv[])
 		if(PlayerTurn%2 == 0)
 		{
 			printf("Enter coordinates in the format x,y ");
-			scanf("%hhd,%hhd", &PlayerInput.x, &PlayerInput.y);
+			
+			// Check to see if there was valid input
+			int ret = scanf("%hhd,%hhd", &PlayerInput.x, &PlayerInput.y);
+			if(ret != 2)
+			{
+				printf("You can only enter digits as input.\n");
+				// A solution I got from stack overflow
+				// Helps in clearing the stdin buffer
+				// https://stackoverflow.com/questions/7898215/how-to-clear-input-buffer-in-c
+				int c;
+				while((c = getchar()) != '\n' && c != EOF);
+				continue;
+			}
 			
 			char SendBuffer[BUFFSIZE];
 			memset(&SendBuffer, 0, BUFFSIZE);
@@ -350,15 +372,22 @@ int main(int argc, char *argv[])
 		else
 			printf("Waiting for response...\n");
 		
-		// This variable syncs both players
-		PlayerTurn++;
-		
 		// Wait until data is received
-		while(!DataReceived);
+		while(!DataReceived && error == DEFAULT);
 		DataReceived = false;
 		
+		if(error == INVALID_DATA)
+		{
+			error = DEFAULT;
+			continue;
+		}
+		
 		if(InsertCoordinates(MainBoard, IncomingCoordinates, InternalPlayerCounter))
+		{
 			InternalPlayerCounter++;
+			// This variable syncs both players
+			PlayerTurn++;
+		}
 		else
 			printf("Player %d goes again.\n", (InternalPlayerCounter%2 == 0 ? 2 : 1 ));
 
@@ -371,9 +400,9 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-	printf("Reached1\n");
-	//free(data);
-	printf("Reached2\n");
+	
+	free(dataPtr);
+	
 	pthread_join(ReceivingThread, NULL);
 	close(SocketDescriptor);
 	
