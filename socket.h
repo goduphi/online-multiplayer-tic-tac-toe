@@ -17,7 +17,7 @@
 typedef enum ERROR
 {
 	DEFAULT = -10,
-	INVALID_DATA
+	INVALID_DATA,
 } ERROR;
 
 // The first byte will be the id of the clients

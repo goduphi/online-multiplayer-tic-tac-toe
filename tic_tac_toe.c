@@ -146,25 +146,24 @@ bool CheckRowCol(int Board[][BOARD_SIZE], int *PlayerNumber, CHECK check)
 		
 		if(first_idx_val == 0)
 		{
-			break;
+			continue;
 		}
 		
 		for(j = 1; j < BOARD_SIZE; j++)
 		{
-			switch(check)
+			if(check == ROW)
 			{
-				case ROW:
-					if(first_idx_val != Board[i][j])
-					{
-						return false;
-					}
-				break;
-				case COL:
-					if(first_idx_val != Board[j][i])
-					{
-						return false;
-					}
-				break;
+				if(first_idx_val != Board[i][j])
+				{
+					break;
+				}
+			}
+			else if(check == COL)
+			{
+				if(first_idx_val != Board[j][i])
+				{
+					break;
+				}
 			}
 		}
 		
@@ -285,7 +284,7 @@ void *ReceiveDataFromServer(void *data)
 		else
 		{
 			ConvertToCoordinates(ReceivedData, &IncomingCoordinates);
-			printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0], IncomingCoordinates.x, IncomingCoordinates.y);
+			printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0] + 1, IncomingCoordinates.x, IncomingCoordinates.y);
 			DataReceived = true;
 		}
 	}
@@ -402,7 +401,6 @@ int main(int argc, char *argv[])
 	}
 	
 	free(dataPtr);
-	
 	pthread_join(ReceivingThread, NULL);
 	close(SocketDescriptor);
 	

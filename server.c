@@ -44,8 +44,7 @@ void *SendDataToAllClients(void *clientData)
 			Send(clients->descriptors[id], ErrorBuff);
 			continue;
 		}
-		
-		if(bytesReceived > 0)
+		else if(bytesReceived > 0)
 		{
 			printf("Received %ld bytes of data from client: %d -> %d,%d\n", bytesReceived, clients->data[0], clients->data[1], clients->data[2]);
 			// Debugging
