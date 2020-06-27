@@ -14,11 +14,14 @@
 #define BUFFSIZE 3
 #define MAX_CLIENTS 2
 
-typedef enum ERROR
+typedef enum FLAGS
 {
 	DEFAULT = -10,
 	INVALID_DATA,
-} ERROR;
+	PLAY,
+	WON,
+	END
+} FLAGS;
 
 // The first byte will be the id of the clients
 // The next two bytes will be the coordinates

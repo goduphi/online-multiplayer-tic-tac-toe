@@ -30,8 +30,11 @@ static int SocketDescriptor = 0;
 static int8_t id = -1;
 static int8_t PlayerTurn = -1;
 static bool DataReceived = false;
-static ERROR error = DEFAULT;
+static FLAGS error = DEFAULT;
+static FLAGS start = DEFAULT;
+static FLAGS end = DEFAULT;
 Coordinates IncomingCoordinates;
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 // Creates the board
 // Param: Pass in a two-dimensional int array
@@ -276,16 +279,25 @@ void *ReceiveDataFromServer(void *data)
 	while(1)
 	{
 		ReceiveData(SocketDescriptor, ReceivedData);
-		if((ERROR)ReceivedData[1] == INVALID_DATA)
+		
+		if((FLAGS)ReceivedData[1] == END)
+			break;
+		else if((FLAGS)ReceivedData[1] == PLAY)
+			start = PLAY;
+		else if((FLAGS)ReceivedData[1] == INVALID_DATA)
 		{
 			printf("Your input was invalid.\n");
+			pthread_mutex_lock(&mtx);
 			error = INVALID_DATA;
+			pthread_mutex_unlock(&mtx);
 		}
 		else
 		{
 			ConvertToCoordinates(ReceivedData, &IncomingCoordinates);
 			printf("\nPlayer %hhd playerd %hhd, %hhd\n", ReceivedData[0] + 1, IncomingCoordinates.x, IncomingCoordinates.y);
+			pthread_mutex_lock(&mtx);
 			DataReceived = true;
+			pthread_mutex_unlock(&mtx);
 		}
 	}
 }
@@ -336,9 +348,10 @@ int main(int argc, char *argv[])
 	pthread_t ReceivingThread;
 	pthread_create(&ReceivingThread, NULL, ReceiveDataFromServer, (void *)&data);
 	
-	// While id is not set, wait
-	// This makes sure the game does not start until the player gets an id
-	while(id == -1);
+	// While id and play packet is is not set, wait
+	// This makes sure the game does not start until the player gets an id and
+	// the player receives a play notification
+	while(id == -1 || start == DEFAULT);
 	
 	// Game loop
 	while(1)
@@ -373,11 +386,15 @@ int main(int argc, char *argv[])
 		
 		// Wait until data is received
 		while(!DataReceived && error == DEFAULT);
+		pthread_mutex_lock(&mtx);
 		DataReceived = false;
+		pthread_mutex_unlock(&mtx);
 		
 		if(error == INVALID_DATA)
 		{
+			pthread_mutex_lock(&mtx);
 			error = DEFAULT;
+			pthread_mutex_unlock(&mtx);
 			continue;
 		}
 		
@@ -396,6 +413,10 @@ int main(int argc, char *argv[])
 		   CheckRLDiag(MainBoard, &PlayerNumber) || CheckLRDiag(MainBoard, &PlayerNumber))
 		{
 			printf("Player %d WINS!!!\n", PlayerNumber);
+			char buff[BUFFSIZE];
+			memset(&buff, -1, sizeof(buff));
+			buff[1] = (char)WON;
+			Send(SocketDescriptor, buff);
 			break;
 		}
 	}

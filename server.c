@@ -36,10 +36,20 @@ void *SendDataToAllClients(void *clientData)
 		memset(clients->data, 0, sizeof(BUFFSIZE));
 		ssize_t bytesReceived = ServerReceiveData(clients->descriptors[id], clients->data);
 		
-		if(!CheckData(clients->data))
+		if((FLAGS)clients->data[1] == WON)
+		{
+			char buff[BUFFSIZE];
+			memset(&buff, -1, sizeof(buff));
+			buff[1] = (char)END;
+			int i = 0;
+			for(i = 0; i < MAXPENDING; i++)
+				Send(clients->descriptors[i], buff);
+			break;
+		}
+		else if(!CheckData(clients->data))
 		{
 			char ErrorBuff[BUFFSIZE];
-			memset(&ErrorBuff, 0, sizeof(ErrorBuff));
+			memset(&ErrorBuff, -1, sizeof(ErrorBuff));
 			ErrorBuff[1] = (char)INVALID_DATA;
 			Send(clients->descriptors[id], ErrorBuff);
 			continue;
@@ -60,7 +70,7 @@ void *SendDataToAllClients(void *clientData)
 					Send(clients->descriptors[i], clients->data);
 		}
 	}
-	close(clients->descriptors[id]);
+	// close(clients->descriptors[id]);
 }
 
 int main(int argc, char *argv[])
@@ -134,7 +144,16 @@ int main(int argc, char *argv[])
 		}
 		
 		if(ClientCount == 2)
+		{
+			// Send the id back to the client
+			char Start[BUFFSIZE];
+			memset(&Start, -1, sizeof(Start));
+			Start[1] = PLAY;
+			int i = 0;
+			for(; i < MAXPENDING; i++)
+				Send(clients.descriptors[i], Start);
 			ClientCount = 0;
+		}
 	}
 	
 	free(DataBuffer);
