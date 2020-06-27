@@ -14,6 +14,6 @@
   Sockets API in C  
   pthread API in C  
   
-### Bugs
-  Negative coordinates are not handled by the server properly.  
-  Both server and client require proper signal handling to handle abrubt disconnects.
+### Bugs  
+  Both server and client require proper signal handling to handle abrubt disconnects.  
+  Client connections do not terminate when any one of clients win the game.
