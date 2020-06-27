@@ -16,4 +16,3 @@
   
 ### Bugs  
   Both server and client require proper signal handling to handle abrubt disconnects.  
-  Client connections do not terminate when any one of clients win the game.
