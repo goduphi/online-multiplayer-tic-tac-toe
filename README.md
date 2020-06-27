@@ -14,8 +14,6 @@
   Sockets API in C  
   pthread API in C  
   
-### Yet to implement
-- [ ] Send data from one client to the other client.
-  
-### Note
-  All of the code was written in C and compiled on Linux using gcc. A lot of the code is not portable.
+### Bugs
+  Negative coordinates are not handled by the server properly.  
+  Both server and client require proper signal handling to handle abrubt disconnects.
