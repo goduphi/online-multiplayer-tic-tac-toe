@@ -19,16 +19,16 @@ Author: Michael J. Donaho, Kenneth L. Calvert
 - socket.c: This file contains all of the implementations for the function prototypes defined in socket.h.
 
 ### Compilation instructions:
-Server: ```gcc server.c socket.c -o server -lpthread -g```  
-Client: ```gcc tic_tac_toe.c socket.c -o ttt -lpthread -g```  
+- Server: ```gcc server.c socket.c -o server -lpthread -g```  
+- Client: ```gcc tic_tac_toe.c socket.c -o ttt -lpthread -g```  
 
 Both the server and client was compiled and tested on Lubuntu 18.04 running on a virtual machine.
 
 Note: The -g flag is optional. I only used it for debugging purposes.  
 
 ### Usage
-Server: `./server <Port Number>`   
-Client: `./ttt <Server Address> <Port Number>`
+- Server: `./server <Port Number>`   
+- Client: `./ttt <Server Address> <Port Number>`
   
 ### Bug Report 
 - Running both the server and client on a Raspberry Pi 3b+ running the Raspberry Pi OS resulted in an undefined behaviour.
