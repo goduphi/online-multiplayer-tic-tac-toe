@@ -9,8 +9,8 @@ how multiplayers games are structured.
 - Pthread API in C  
 
 ### Resource used:
-  Practical Guide for Programmers - 2nd Edition  
-  Author: Michael J. Donaho, Kenneth L. Calvert
+Practical Guide for Programmers - 2nd Edition  
+Author: Michael J. Donaho, Kenneth L. Calvert
   
 ### File descriptions
 - server.c: This file contains all of the source code for the server.
