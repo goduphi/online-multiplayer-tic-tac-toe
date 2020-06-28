@@ -27,7 +27,7 @@ Both the server and client was compiled and tested on Lubuntu 18.04 running on a
 Note: The -g flag is optional. I only used it for debugging purposes.  
 
 ### Usage
-Server: `./Server <Port Number>`   
+Server: `./server <Port Number>`   
 Client: `./ttt <Server Address> <Port Number>`
   
 ### Bug Report 
