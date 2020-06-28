@@ -4,12 +4,6 @@ with sockets to make a multiplayer game which can be played over the network. Th
 from my interest in online multiplayer gaming and serves as a gateway into learning more about
 how multiplayers games are structured.
 
-### Why C?
-The primary reason for using C was because I wanted to get the experience of programming an application
-where the programmer had to pay attention to every little detail, from the data types being used, to manual
-exception handling. The code is far from being perfect but it definitely helped me improve my coding skills
-in C.
-
 ### API's used:
 - Sockets API in C  
 - Pthread API in C  
@@ -18,7 +12,7 @@ in C.
   Practical Guide for Programmers - 2nd Edition  
   Author: Michael J. Donaho, Kenneth L. Calvert
   
-### Description of each file
+### File descriptions
 - server.c: This file contains all of the source code for the server.
 - tic_tac_toe.c: This file contains all of the source code for client/the game.
 - socket.h: This file contains the interface for all of the required functions for both the server and client.
