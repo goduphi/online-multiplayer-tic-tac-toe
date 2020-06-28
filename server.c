@@ -4,7 +4,6 @@
 #include "socket.h"
 
 static const int MAXPENDING = 2; // Maximum number of outstanding connection requests
-static int CurrentId = -1;
 
 void CheckCmdArgs(int argc, char *argv[])
 {
@@ -33,13 +32,13 @@ void *SendDataToAllClients(void *clientData)
 	printf("Client id: %d, joined the server.\n", id);
 	while(1)
 	{
-		memset(clients->data, 0, sizeof(BUFFSIZE));
+		memset(clients->data, 0, BUFFSIZE*sizeof(char));
 		ssize_t bytesReceived = ServerReceiveData(clients->descriptors[id], clients->data);
 		
 		if((FLAGS)clients->data[1] == WON)
 		{
 			char buff[BUFFSIZE];
-			memset(&buff, -1, sizeof(buff));
+			memset(&buff, 0, sizeof(buff));
 			buff[1] = (char)END;
 			int i = 0;
 			for(i = 0; i < MAXPENDING; i++)
@@ -49,7 +48,7 @@ void *SendDataToAllClients(void *clientData)
 		else if(!CheckData(clients->data))
 		{
 			char ErrorBuff[BUFFSIZE];
-			memset(&ErrorBuff, -1, sizeof(ErrorBuff));
+			memset(&ErrorBuff, 0, sizeof(ErrorBuff));
 			ErrorBuff[1] = (char)INVALID_DATA;
 			Send(clients->descriptors[id], ErrorBuff);
 			continue;
@@ -70,6 +69,7 @@ void *SendDataToAllClients(void *clientData)
 					Send(clients->descriptors[i], clients->data);
 		}
 	}
+	return NULL;
 	// close(clients->descriptors[id]);
 }
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 		
 		// Send the id back to the client
 		char IdBuffer[BUFFSIZE];
-		memset(&IdBuffer, -1, sizeof(IdBuffer));
+		memset(&IdBuffer, 0, sizeof(IdBuffer));
 		IdBuffer[0] = ClientCount;
 		Send(sock, IdBuffer);
 		clients.descriptors[ClientCount] = sock;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 		{
 			// Send the id back to the client
 			char Start[BUFFSIZE];
-			memset(&Start, -1, sizeof(Start));
+			memset(&Start, 0, sizeof(Start));
 			Start[1] = PLAY;
 			int i = 0;
 			for(; i < MAXPENDING; i++)

@@ -32,7 +32,7 @@ static int8_t PlayerTurn = -1;
 static bool DataReceived = false;
 static FLAGS error = DEFAULT;
 static FLAGS start = DEFAULT;
-static FLAGS end = DEFAULT;
+static char *dataPtr = NULL;
 Coordinates IncomingCoordinates;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -98,7 +98,7 @@ void PrintBoard(int Board[][BOARD_SIZE], char Player1Char, char Player2Char)
 // Param: Pass in player Coordinates
 bool CheckIfValidInput(Coordinates PlayerInput)
 {
-	if(PlayerInput.x > 2 && PlayerInput.x < 0 || PlayerInput.y > 2 && PlayerInput.y < 0)
+	if((PlayerInput.x > 2 && PlayerInput.x < 0) || (PlayerInput.y > 2 && PlayerInput.y < 0))
 		return false;
 	return true;
 }
@@ -300,6 +300,7 @@ void *ReceiveDataFromServer(void *data)
 			pthread_mutex_unlock(&mtx);
 		}
 	}
+	return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -343,7 +344,7 @@ int main(int argc, char *argv[])
 	PrintBoard(MainBoard, Player1Char, Player2Char);
 	
 	char *data = (char *)malloc(BUFFSIZE * sizeof(char));
-	char *dataPtr = data;
+	dataPtr = data;
 	
 	pthread_t ReceivingThread;
 	pthread_create(&ReceivingThread, NULL, ReceiveDataFromServer, (void *)&data);
@@ -375,7 +376,7 @@ int main(int argc, char *argv[])
 			}
 			
 			char SendBuffer[BUFFSIZE];
-			memset(&SendBuffer, 0, BUFFSIZE);
+			memset(&SendBuffer, 0, sizeof(SendBuffer));
 			SendBuffer[0] = id;
 			SendBuffer[1] = PlayerInput.x;
 			SendBuffer[2] = PlayerInput.y;
@@ -414,7 +415,7 @@ int main(int argc, char *argv[])
 		{
 			printf("Player %d WINS!!!\n", PlayerNumber);
 			char buff[BUFFSIZE];
-			memset(&buff, -1, sizeof(buff));
+			memset(&buff, 0, sizeof(buff));
 			buff[1] = (char)WON;
 			Send(SocketDescriptor, buff);
 			break;
