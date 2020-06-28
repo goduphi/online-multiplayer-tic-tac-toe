@@ -18,6 +18,12 @@ in C.
   Practical Guide for Programmers - 2nd Edition  
   Author: Michael J. Donaho, Kenneth L. Calvert
   
+### Description of each file
+- server.c: This file contains all of the source code for the server.
+- tic_tac_toe.c: This file contains all of the source code for client/the game.
+- socket.h: This file contains the interface for all of the required functions for both the server and client.
+- socket.c: This file contains all of the implementations for the function prototypes defined in socket.h.
+
 ### Compilation instructions:
 Server: ```gcc server.c socket.c -o server -lpthread -g```  
 Client: ```gcc tic_tac_toe.c socket.c -o ttt -lpthread -g```  
