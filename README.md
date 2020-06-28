@@ -19,8 +19,8 @@ in C.
   Author: Michael J. Donaho, Kenneth L. Calvert
   
 ### Compilation instructions:
-Client: ```gcc tic_tac_toe.c socket.c -o ttt -lpthread -g```  
 Server: ```gcc server.c socket.c -o server -lpthread -g```  
+Client: ```gcc tic_tac_toe.c socket.c -o ttt -lpthread -g```  
 
 Both the server and client was compiled and tested on Lubuntu 18.04 running on a virtual machine.
 
