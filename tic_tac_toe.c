@@ -138,7 +138,7 @@ bool CheckRow(int Board[][BOARD_SIZE], int *PlayerNumber)
         int row_val = Board[i][0];
 		if(row_val == 0)
 			continue;
-        for(; j < BOARD_SIZE; j++)
+        for(j = 1; j < BOARD_SIZE; j++)
         {
             if(row_val != Board[i][j])
                 break;
@@ -163,7 +163,7 @@ bool CheckCol(int Board[][BOARD_SIZE], int *PlayerNumber)
         int col_val = Board[0][i];
 		if(col_val == 0)
 			continue;
-        for(; j < BOARD_SIZE; j++)
+        for(j = 1; j < BOARD_SIZE; j++)
         {
             if(col_val != Board[j][i])
                 break;
