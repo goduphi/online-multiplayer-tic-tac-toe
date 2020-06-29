@@ -4,6 +4,7 @@
 #include "socket.h"
 
 static const int MAXPENDING = 2; // Maximum number of outstanding connection requests
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void CheckCmdArgs(int argc, char *argv[])
 {
@@ -37,40 +38,43 @@ void *SendDataToAllClients(void *clientData)
 		
 		if((FLAGS)clients->data[1] == WON)
 		{
-			char buff[BUFFSIZE];
-			memset(&buff, 0, sizeof(buff));
-			buff[1] = (char)END;
-			int i = 0;
-			for(i = 0; i < MAXPENDING; i++)
-				Send(clients->descriptors[i], buff);
+			pthread_mutex_lock(&lock);
+			{
+				char buff[BUFFSIZE];
+				memset(&buff, 0, sizeof(buff));
+				buff[1] = (char)END;
+				int i = 0;
+				for(i = 0; i < MAXPENDING; i++)
+					Send(clients->descriptors[i], buff);
+			}
+			pthread_mutex_unlock(&lock);
 			break;
 		}
 		else if(!CheckData(clients->data))
 		{
-			char ErrorBuff[BUFFSIZE];
-			memset(&ErrorBuff, 0, sizeof(ErrorBuff));
-			ErrorBuff[1] = (char)INVALID_DATA;
-			Send(clients->descriptors[id], ErrorBuff);
+			pthread_mutex_lock(&lock);
+			{
+				char ErrorBuff[BUFFSIZE];
+				memset(&ErrorBuff, 0, sizeof(ErrorBuff));
+				ErrorBuff[1] = (char)INVALID_DATA;
+				Send(clients->descriptors[id], ErrorBuff);
+			}
+			pthread_mutex_unlock(&lock);
 			continue;
 		}
 		else if(bytesReceived > 0)
 		{
 			printf("Received %ld bytes of data from client: %d -> %d,%d\n", bytesReceived, clients->data[0], clients->data[1], clients->data[2]);
-			// Debugging
-			int i = 0;
-			for(i = 0; i < BUFFSIZE; i++)
+			pthread_mutex_lock(&lock);
 			{
-				printf("%x ", clients->data[i]);
-			}
-			printf("\n");
-			for(i = 0; i < MAXPENDING; i++)
-				// Send the data to all clients except the sender
-				//if(clients->descriptors[i] != clients->descriptors[id])
+				int i = 0;
+				for(i = 0; i < MAXPENDING; i++)
 					Send(clients->descriptors[i], clients->data);
+			}
+			pthread_mutex_unlock(&lock);
 		}
 	}
 	return NULL;
-	// close(clients->descriptors[id]);
 }
 
 int main(int argc, char *argv[])
@@ -124,12 +128,16 @@ int main(int argc, char *argv[])
 		
 		clients.id = ClientCount;
 		
-		// Send the id back to the client
-		char IdBuffer[BUFFSIZE];
-		memset(&IdBuffer, 0, sizeof(IdBuffer));
-		IdBuffer[0] = ClientCount;
-		Send(sock, IdBuffer);
-		clients.descriptors[ClientCount] = sock;
+		pthread_mutex_lock(&lock);
+		{
+			// Send the id back to the client
+			char IdBuffer[BUFFSIZE];
+			memset(&IdBuffer, 0, sizeof(IdBuffer));
+			IdBuffer[0] = ClientCount;
+			Send(sock, IdBuffer);
+			clients.descriptors[ClientCount] = sock;
+		}
+		pthread_mutex_unlock(&lock);
 		
 		char ClientName[INET_ADDRSTRLEN];
 		if(inet_ntop(AF_INET, &ClientAddr.sin_addr.s_addr, ClientName, sizeof(ClientName)) != NULL)
@@ -145,14 +153,18 @@ int main(int argc, char *argv[])
 		
 		if(ClientCount == 2)
 		{
-			// Send the id back to the client
-			char Start[BUFFSIZE];
-			memset(&Start, 0, sizeof(Start));
-			Start[1] = PLAY;
-			int i = 0;
-			for(; i < MAXPENDING; i++)
-				Send(clients.descriptors[i], Start);
-			ClientCount = 0;
+			pthread_mutex_lock(&lock);
+			{
+				// Send the id back to the client
+				char Start[BUFFSIZE];
+				memset(&Start, 0, sizeof(Start));
+				Start[1] = PLAY;
+				int i = 0;
+				for(; i < MAXPENDING; i++)
+					Send(clients.descriptors[i], Start);
+				ClientCount = 0;
+			}
+			pthread_mutex_unlock(&lock);
 		}
 	}
 	

@@ -19,13 +19,6 @@ typedef struct Coordinates
 	int8_t y;
 } Coordinates;
 
-// Check for row or column
-typedef enum CHECK
-{
-	COL,
-	ROW
-} CHECK;
-
 static int SocketDescriptor = 0;
 static int8_t id = -1;
 static int8_t PlayerTurn = -1;
@@ -134,50 +127,54 @@ bool InsertCoordinates(int Board[][BOARD_SIZE], Coordinates PlayerInput, int Int
 	}
 }
 
-// Checks the row/col if the player already has 3 consecutive characters
+// Checks the row for 3 consecutive character that are equal to one another
 // Param 1: Pass in the already initialized two-dimensional array
 // Param 2: Pass in the address to who the player is, that is the player number
-// Param 3: Pass in the enum value to say to check the row/col
-bool CheckRowCol(int Board[][BOARD_SIZE], int *PlayerNumber, CHECK check)
+bool CheckRow(int Board[][BOARD_SIZE], int *PlayerNumber)
 {
-	int i = 0;
-	int j = 0;
-	
-	for(i = 0; i < BOARD_SIZE; i++)
-	{
-		int first_idx_val = Board[i][0];
-		
-		if(first_idx_val == 0)
-		{
+    int i = 0, j = 1;
+    for(; i < BOARD_SIZE; i++)
+    {
+        int row_val = Board[i][0];
+		if(row_val == 0)
 			continue;
-		}
-		
-		for(j = 1; j < BOARD_SIZE; j++)
-		{
-			if(check == ROW)
-			{
-				if(first_idx_val != Board[i][j])
-				{
-					break;
-				}
-			}
-			else if(check == COL)
-			{
-				if(first_idx_val != Board[j][i])
-				{
-					break;
-				}
-			}
-		}
-		
-		if(j == BOARD_SIZE)
-		{
-			*PlayerNumber = first_idx_val;
-			return true;
-		}
-	}
-	
-	return false;
+        for(; j < BOARD_SIZE; j++)
+        {
+            if(row_val != Board[i][j])
+                break;
+        }
+        if(j == BOARD_SIZE)
+        {
+            *PlayerNumber = row_val;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Checks the column for 3 consecutive character that are equal to one another
+// Param 1: Pass in the already initialized two-dimensional array
+// Param 2: Pass in the address to who the player is, that is the player number
+bool CheckCol(int Board[][BOARD_SIZE], int *PlayerNumber)
+{
+    int i = 0, j = 1;
+    for(; i < BOARD_SIZE; i++)
+    {
+        int col_val = Board[0][i];
+		if(col_val == 0)
+			continue;
+        for(; j < BOARD_SIZE; j++)
+        {
+            if(col_val != Board[j][i])
+                break;
+        }
+        if(j == BOARD_SIZE)
+        {
+            *PlayerNumber = col_val;
+            return true;
+        }
+    }
+    return false;
 }
 
 // Checks the diagonal going from 0,0 to 2,2
@@ -410,7 +407,7 @@ int main(int argc, char *argv[])
 
 		PrintBoard(MainBoard, Player1Char, Player2Char);
 		
-		if(CheckRowCol(MainBoard, &PlayerNumber, ROW) || CheckRowCol(MainBoard, &PlayerNumber, COL) ||
+		if(CheckRow(MainBoard, &PlayerNumber) || CheckCol(MainBoard, &PlayerNumber) ||
 		   CheckRLDiag(MainBoard, &PlayerNumber) || CheckLRDiag(MainBoard, &PlayerNumber))
 		{
 			printf("Player %d WINS!!!\n", PlayerNumber);
