@@ -127,7 +127,7 @@ bool InsertCoordinates(int Board[][BOARD_SIZE], Coordinates PlayerInput, int Int
 	}
 }
 
-// Checks the row for 3 consecutive character that are equal to one another
+// Checks whether any row has 3 consecutive equal values
 // Param 1: Pass in the already initialized two-dimensional array
 // Param 2: Pass in the address to who the player is, that is the player number
 bool CheckRow(int Board[][BOARD_SIZE], int *PlayerNumber)
@@ -152,7 +152,7 @@ bool CheckRow(int Board[][BOARD_SIZE], int *PlayerNumber)
     return false;
 }
 
-// Checks the column for 3 consecutive character that are equal to one another
+// Checks whether any column has 3 consecutive equal values
 // Param 1: Pass in the already initialized two-dimensional array
 // Param 2: Pass in the address to who the player is, that is the player number
 bool CheckCol(int Board[][BOARD_SIZE], int *PlayerNumber)
@@ -250,6 +250,9 @@ bool CheckRLDiag(int Board[][BOARD_SIZE], int *PlayerNumber)
 	return false;
 }
 
+// Checks to see if the required number of arguments have been provided
+// Param 1: Pass in argc
+// Param 2: Pass in argv
 void CheckCmdArgs(int argc, char *argv[])
 {
 	if(argc < 2 || argc > 3)
@@ -259,12 +262,16 @@ void CheckCmdArgs(int argc, char *argv[])
 	}
 }
 
+// Converts a char array into Coordinates
+// Param 1: Pass in the array which holds data received from the server
+// Param 2: Pass in the address of a Coordinates struct
 void ConvertToCoordinates(char *data, Coordinates *coordinates)
 {
 	coordinates->x = data[1];
 	coordinates->y = data[2];
 }
 
+// This function runs on a separate thread waiting to receive data from the server
 void *ReceiveDataFromServer(void *data)
 {
 	char *ReceivedData = (char *)data;
