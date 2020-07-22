@@ -1,8 +1,5 @@
 # Online Multiplayer Tic-tac-toe
-This project is a take on the classic game, Tic-tac-toe, which combines a text based interface
-with sockets to make a multiplayer game which can be played over the network. The idea stems
-from my interest in online multiplayer gaming and serves as a gateway into learning more about
-how multiplayers games are structured.
+This project is a take on the classic game, Tic-tac-toe, which combines a text-based interface with sockets to make a multiplayer game that can be played over the network. The idea stems from my interest in online multiplayer gaming and serves as a gateway to learning more about how multiplayer games are structured.
 
 ### API's used:
 - Sockets API in C  
